@@ -108,7 +108,7 @@ class JapaneseDictionaryDownloader(BaseVoiceDownloader):
     def _success_message(self):
         return _(
             "Successfully downloaded the Japanese dictionary.\n"
-            "To use Japanese Kokoro voices, you need to restart NVDA.\n"
+            "To use Japanese voices, you need to restart NVDA.\n"
             "Do you want to restart NVDA now?"
         )
 

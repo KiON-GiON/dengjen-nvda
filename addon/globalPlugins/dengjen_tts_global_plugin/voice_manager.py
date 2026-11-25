@@ -88,8 +88,19 @@ def _process_voice_archive(dialog, on_installed, res):
             parent=gui.mainFrame,
         )
         return
+    message = _("Voice {voice} has been installed successfully.").format(
+        voice=voice_key
+    )
+    if (
+        voice_key.lower().startswith("ja")
+        and not japanese_dictionary_download.JapaneseDictionaryCatalog().is_installed()
+    ):
+        message += "\n\n" + _(
+            "This Japanese voice needs the Japanese dictionary. "
+            "You can install it from the Kokoro tab in the voice manager."
+        )
     gui.messageBox(
-        _("Voice {voice} has been installed successfully.").format(voice=voice_key),
+        message,
         _("Voice installed successfully"),
         style=wx.ICON_INFORMATION,
         parent=gui.mainFrame,
@@ -510,9 +521,11 @@ class KokoroVoicesPanel(SizedPanel):
             self,
             -1,
             _(
-                "Kokoro is a single multilingual voice with 54 presets, "
-                "installed as one unit. After installing, choose a preset "
-                "from NVDA's Speaker setting."
+                "The Japanese presets (jf_ and jm_) and Japanese Piper voices "
+                "need a shared dictionary. It is a {size_mb} MB download and "
+                "takes effect after restarting NVDA."
+            ).format(
+                size_mb=round(japanese_dictionary_download.EXPECTED_SIZE / 1_000_000)
             ),
         )
         self.install_btn = wx.Button(self, -1, _("&Install Kokoro voice"))

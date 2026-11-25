@@ -13,6 +13,11 @@ import addonHandler
 from languageHandler import normalizeLanguage
 from logHandler import log
 
+from dengjen_neural_voices.const import DENGJEN_JAPANESE_DICTIONARY_DIR
+from dengjen_neural_voices.japanese_dictionary import (
+    is_installed as is_japanese_dictionary_installed,
+)
+
 addonHandler.initTranslation()
 
 from dengjen_neural_voices.domain import voice_metadata
@@ -203,6 +208,17 @@ class PiperVoiceDownloader(BaseVoiceDownloader):
 
     def _success_message(self):
 
+        if (
+            self.voice.language.code.lower().startswith("ja")
+            and not is_japanese_dictionary_installed(DENGJEN_JAPANESE_DICTIONARY_DIR)
+        ):
+            return _(
+                "Successfully downloaded voice {voice}.\n"
+                "This Japanese voice needs the Japanese dictionary "
+                "(available in the Kokoro tab of the voice manager).\n"
+                "To use this voice, you need to restart NVDA.\n"
+                "Do you want to restart NVDA now?"
+            ).format(voice=self.voice.key)
         return _(
             "Successfully downloaded voice  {voice}.\n"
             "To use this voice, you need to restart NVDA.\n"
@@ -582,13 +598,20 @@ def _install_melotts_archive(tar, members, manifest, tar_path, voices_dir):
 
 def _install_piper_archive(tar, filenames, tar_path, voices_dir):
     onnx_files = list(filter(lambda pth: fnmatch(pth, "*.onnx"), filenames))
-    config_files = list(filter(lambda pth: fnmatch(pth, "*.json"), filenames))
+    config_files = [
+        pth
+        for pth in filenames
+        if fnmatch(pth, "*.json")
+        and Path(pth).name != voice_metadata.VOICE_METADATA_FILENAME
+    ]
     if not (onnx_files and config_files):
         raise FileNotFoundError("Required files not found in archive")
     if len(onnx_files) == 1:
         voice_key = _voice_key_from_filename(Path(onnx_files[0]).stem)
     else:
-        voice_key = _voice_key_from_filename(Path(tar_path).stem[:-4])
+        voice_key = None
+    if voice_key is None:
+        voice_key = _voice_key_from_filename(_archive_stem(tar_path))
     if voice_key is None:
         config = json.loads(
             tar.extractfile(filenames[config_files[0]]).read().decode("utf-8")

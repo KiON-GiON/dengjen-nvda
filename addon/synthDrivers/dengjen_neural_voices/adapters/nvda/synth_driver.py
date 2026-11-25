@@ -1,3 +1,4 @@
+import re
 import typing
 from asyncio.exceptions import CancelledError as AsyncioCancelledError
 from collections import OrderedDict
@@ -57,6 +58,8 @@ from ...domain.tts_system import (
 )
 from ...helpers import update_displaied_params_on_voice_change
 from ...ports.tts_backend import BackendError, BackendUnavailableError
+
+from ...japanese_dictionary import DICTIONARY_ENV
 
 addonHandler.initTranslation()
 
@@ -130,6 +133,14 @@ def _get_focus_pan() -> float:
         return max(-1.0, min(1.0, pan))
     except Exception:
         return 0.0
+
+_ASCII_LINEBREAK_RE = re.compile(r"(?<=[A-Za-z0-9])\n(?=[A-Za-z0-9])")
+
+
+def _normalize_say_all_text(text: str, language: str) -> str:
+    if language.lower().startswith("ja"):
+        return _ASCII_LINEBREAK_RE.sub(" ", text).replace("\n", "")
+    return text.replace("\n", " ")
 
 
 class SpeechTask:
@@ -211,11 +222,13 @@ class SpeechTask:
         return collected
 
     async def __call__(self):
-        if sayAll.SayAllHandler.isRunning():
-            self.task.text = self.task.text.replace("\n", " ")
-            self.task.speech_options.sentence_silence_ms = 50
 
         voice = self.task.speech_options.voice
+        if sayAll.SayAllHandler.isRunning():
+            self.task.text = _normalize_say_all_text(
+                self.task.text, getattr(voice, "language", "")
+            )
+            self.task.speech_options.sentence_silence_ms = 50
         voice_key = voice.key
         orig_speaker = await run_in_executor(getattr, voice, "speaker", None)
         speaker = self.speaker if self.speaker is not None else orig_speaker
@@ -903,10 +916,19 @@ class SynthDriver(NvdaSynthDriver):
             with suppress(AttributeError):
                 delattr(self, attr)
 
-    def _announce_switch_failure(self, value):
+    def _announce_switch_failure(self, value, error=None):
+        display_name = self.availableVoices[value].displayName
+        if error is not None and DICTIONARY_ENV in str(error):
+            ui.message(
+                _(
+                    "Failed to load voice {voice} because the Japanese dictionary is not installed. "
+                    "Install it from the Dengjen voice manager and restart NVDA."
+                ).format(voice=display_name)
+            )
+            return
         ui.message(
             _("Failed to load voice {voice}. Keeping the previous voice.").format(
-                voice=self.availableVoices[value].displayName
+                voice=display_name
             )
         )
 
@@ -941,7 +963,7 @@ class SynthDriver(NvdaSynthDriver):
         self.__voice = previous_value or self._get_voice()
         self._forget_cached_choices()
         if previous_value is not None:
-            self._announce_switch_failure(value)
+            self._announce_switch_failure(value, error)
         self._watch_load(
             self.tts.speech_options.voice, self._on_voice_ready, self._on_load_failed
         )
