@@ -14,6 +14,7 @@ addon_info = AddonInfo(
     addon_version="4.2.2",
     addon_changelog=_(
         "This unofficial version adds Japanese support and vowel clustering support from Piper 1.5+ voices. "
+        "It also fixes a long-standing inference bug that affected some voices, notably Spanish ones. "
         "You must install the required Japanese dictionary from the Kokoro tab in the voice manager. "
         "The voice catalog was pinned to a more recent commit."
     ),
