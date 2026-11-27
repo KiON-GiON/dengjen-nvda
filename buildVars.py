@@ -11,13 +11,11 @@ addon_info = AddonInfo(
     addon_description=_(
         """Adds fast, local neural text-to-speech voices to NVDA. Provides a synthesizer driver for Piper voice models via the dengjen engine, together with a voice manager for downloading and installing voices."""
     ),
-    addon_version="4.2.1",
+    addon_version="4.2.2",
     addon_changelog=_(
-        "Deferred the NVDA restart triggered after installing a downloaded voice by 200ms, "
-        "instead of calling core.restart() immediately when the confirmation dialog closes. "
-        "This is a best-effort mitigation for a suspected NVDA-core race between that dialog closing "
-        "and NVDA's own foreground-window handoff, which can cause the restart to be silently refused "
-        "(issue #191)."
+        "This unofficial version adds Japanese support and vowel clustering support from Piper 1.5+ voices. "
+        "You must install the required Japanese dictionary from the Kokoro tab in the voice manager. "
+        "The voice catalog was pinned to a more recent commit."
     ),
     addon_author="Musharraf Omer (original) <ibnomer2011@hotmail.com>, Ali Ustek (maintainer) <13117393+austek@users.noreply.github.com>",
     addon_url="https://github.com/zirekhq/dengjen-nvda",
